@@ -1,0 +1,51 @@
+# 6.8 프로토타입을 깃허브 페이지로 올립니다.
+# source/bundle.b64(원본 코드 묶음)를 풀어 빌드하고, 글꼴은 pretendard 패키지에서 가져옵니다.
+name: 프로토타입 올리기
+
+on:
+  push:
+    branches: [main]
+    paths: ["source/**", ".github/workflows/pages.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: 원본 풀기
+        run: |
+          mkdir site
+          base64 -d source/bundle.b64 | tar xJ -C site
+      - name: 빌드
+        working-directory: site
+        run: |
+          npm install --no-audit --no-fund
+          sh ./copy-fonts.sh
+          npx next build
+          rm -rf out/404
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site/out
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
