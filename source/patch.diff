@@ -1,0 +1,13 @@
+diff --git a/components/ui/layout.tsx b/components/ui/layout.tsx
+index 82a5956..0cd8fec 100644
+--- a/components/ui/layout.tsx
++++ b/components/ui/layout.tsx
+@@ -95,7 +95,7 @@ export function ListRow({ lead, title, sub, trail, onClick, dim, reason }: { lea
+       <span className="flex-1 min-w-0 self-stretch flex flex-wrap items-center gap-x-3 border-b border-(--divider) py-1">
+         {/* 글자를 키워 이름 칸이 좁아지면 오른쪽 버튼이 아래 줄로 내려감(6.5 글자 200%) */}
+         <span className="grow basis-[10em] min-w-0 flex flex-col py-1">
+-          <span className={cn("t-subtitle", dim && "text-(--text-disabled)")}>{title}</span>
++          <span className={cn("t-subtitle", dim && "text-(--text-2)")}>{title}</span>
+           {sub && <span className="t-caption text-(--text-2)">{sub}</span>}
+           {reason && <span className="t-caption text-(--text-2)">{reason}</span>}
+         </span>
