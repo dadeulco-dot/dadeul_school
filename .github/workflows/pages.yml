@@ -1,5 +1,8 @@
 # 6.8 프로토타입을 깃허브 페이지로 올립니다.
 # source/bundle.b64(원본 코드 묶음)를 풀어 빌드하고, 글꼴은 pretendard 패키지에서 가져옵니다.
+# 작은 수정은 source/patch.diff(고친 부분만)로 올릴 수 있습니다(2026-11-28 추가).
+# 수정분이 있으면 원본에 적용해 빌드하고, 빌드가 성공하면 합친 원본을 bundle.b64로 다시 묶어 저장한 뒤 patch.diff를 지웁니다.
+# 그래서 저장소에는 늘 완전한 원본 묶음 하나만 남습니다.
 name: 프로토타입 올리기
 
 on:
@@ -9,7 +12,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
 
@@ -29,6 +32,12 @@ jobs:
         run: |
           mkdir site
           base64 -d source/bundle.b64 | tar xJ -C site
+      - name: 수정분 적용
+        if: hashFiles('source/patch.diff') != ''
+        run: |
+          patch -p1 --no-backup-if-mismatch -d site < source/patch.diff
+          (cd site && find . -type f | sed 's#^\./##' | LC_ALL=C sort > ../files.txt)
+          tar --sort=name --mtime='2026-11-28' --owner=0 --group=0 -C site -cf - -T files.txt | xz -9e | base64 -w0 > merged.b64
       - name: 빌드
         working-directory: site
         run: |
@@ -36,6 +45,16 @@ jobs:
           sh ./copy-fonts.sh
           npx next build
           rm -rf out/404
+      - name: 합친 원본 저장
+        if: hashFiles('source/patch.diff') != ''
+        run: |
+          cp merged.b64 source/bundle.b64
+          git rm -q source/patch.diff
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add source/bundle.b64
+          git commit -q -m "수정분(patch.diff)을 원본 묶음에 합침"
+          git push
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site/out
